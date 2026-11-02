@@ -1,4 +1,18 @@
-# Notes de version
+# Changelog
+
+## 0.1.0 — 2026-11-03
+
+- Keep the Windows host service under SYSTEM while running WGC window capture
+  in the logged-in console user's session. Frames pass through an inherited,
+  synchronized GPU texture; the worker is included in the host executable and
+  opens no network listener. Headless display, normal menu exit, the closing mask and virtual display cleanup were confirmed on the tested Windows/NVIDIA setup.
+- Prevent configuration tabs from adding an empty URL fragment. After Apply,
+  wait for the host to respond before reopening the configuration page. Signing in again may be required after restarting.
+
+The initial release includes the loading/closing/background masks, translated
+texts, the Web UI toggle and the standalone Windows x64 installer introduced
+in the preview. The Windows installer does not require a previous Apollo
+installation. Compatibility testing remains limited; see the README.
 
 ## 0.1.0-preview.1
 

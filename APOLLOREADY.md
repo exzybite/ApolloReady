@@ -81,6 +81,28 @@ Standard Moonlight does not need to call this endpoint to display the masks.
 
 ## Validation and deployment
 
+### Windows service capture
+
+The host service launches the server under SYSTEM in the console session.
+WGC depends on a per-user Windows capture service; on the development machine,
+direct SYSTEM initialization failed with `0x80070424`, although a user-launched
+test server worked. COM impersonation alone did not provide working window
+capture and is not used by the fix.
+
+With masks enabled under SYSTEM, the host now starts a private capture worker
+from the same executable under the console user's token. It inherits only a
+keyed GPU texture handle and a cursor-control mapping. The worker captures the
+single HWND selected and validated by the host; it never opens monitor capture,
+loads server credentials or listens on a network port. The host retains window
+identity checks, masks, lifecycle handling and encoding. A kill-on-close job
+ends the capture worker when its owner goes away. Manual user-mode capture
+keeps the existing in-process path. No separate dependency is installed.
+
+The GPU transfer was tested with an animated diagnostic window from a SYSTEM
+parent and with the full host executable. The user subsequently confirmed
+headless display and normal closing/virtual-display cleanup from Switch on
+the tested Windows/NVIDIA setup.
+
 `tests/apolloready_session_test.cpp` verifies old-process rejection, source
 locking, the closing latch, AppID/generation reset and concurrent stale state
 updates. The development build script runs it before building the server.

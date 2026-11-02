@@ -20,7 +20,7 @@ Il ajoute des écrans de chargement, de fermeture et de jeu en arrière-plan, g�
 
 ## Installation
 
-1. Téléchargez l’installateur Windows x64 depuis la section **Releases** de ce dépôt lorsqu’une version est publiée. Vérifiez son SHA256 avec le fichier `SHA256SUMS.txt` de la même version.
+1. Téléchargez l’installateur Windows x64 depuis les [Releases](https://github.com/exzybite/ApolloReady/releases/latest) de ce dépôt. Vérifiez son SHA256 avec le fichier `SHA256SUMS.txt` de la même version.
 2. Fermez vos jeux et arrêtez un éventuel autre serveur Apollo/Sunshine utilisant les ports standards.
 3. Lancez l’installateur et suivez l’assistant. Les pilotes ViGEmBus et SudoVDA sont fournis ; les pilotes compatibles déjà présents sont conservés.
 4. Ouvrez **https://localhost:47990**, puis créez vos propres identifiants. Le serveur apparaît sous le nom **ApolloReady**.
@@ -38,11 +38,11 @@ Quittez les jeux par leur menu habituel. Un jeu simplement visible en arrière-p
 
 La sélection de fenêtre reste une heuristique. Les jeux qui réutilisent un processus déjà ouvert, changent de fenêtre, restent en mode fenêtré ou présentent une taille différente du flux peuvent rester masqués. Une autre application nouvellement lancée en plein écran peut aussi être sélectionnée par la stratégie de secours utilisée pour les lanceurs. Les écrans tournés et certaines transitions d’affichage ne sont pas couverts.
 
-Un problème d’initialisation vidéo en mode headless a été signalé ; son diagnostic reste à faire.
+La version 0.1.0 corrige la capture lorsque le serveur fonctionne comme service Windows. Sur la configuration testée, l’affichage headless, la sortie normale par le menu, le masque de fermeture et la désactivation de l’écran virtuel sont confirmés. Save / Apply attend désormais le redémarrage du serveur et supprime les fragments d’adresse vides ; une reconnexion peut être nécessaire après un redémarrage.
 
 Les tests connus portent sur GTA IV et Among Us, avec Moonlight-Switch, Joy-Con et passage dock/portable sur un PC Windows/NVIDIA. L’installation et une mise à jour ont été essayées sur ce PC. L’installation des pilotes sur un Windows totalement vierge reste à valider. Ces tests ne constituent pas une garantie de compatibilité universelle ou d’absence de flash à chaque image.
 
-L’installateur de cette préversion n’est pas signé. L’audit npm du 2 novembre 2026 signale 25 avis sur les dépendances (1 faible, 8 modérés, 16 élevés), dont la portée reste à examiner. Ils ne sont pas présentés ici comme des vulnérabilités d’exécution confirmées.
+L’installateur n’est pas signé. L’audit npm du 2 novembre 2026 signale 25 avis sur les dépendances (1 faible, 8 modérés, 16 élevés), dont la portée reste à examiner. Ils ne sont pas présentés ici comme des vulnérabilités d’exécution confirmées.
 
 ## Mises à jour et désinstallation
 

@@ -25,6 +25,7 @@
 
 #ifdef _WIN32
   #include "platform/windows/misc.h"
+  #include "platform/windows/apolloready_wgc_worker.h"
   #include "platform/windows/virtual_display.h"
 #endif
 
@@ -106,6 +107,10 @@ int main(int argc, char *argv[]) {
   // by placing a user-writable directory in the system-wide PATH variable.
   SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32);
 
+  if (argc > 1 && std::string_view(argv[1]) == "--apolloready-wgc-worker") {
+    return platf::run_wgc_worker(argc, argv);
+  }
+
   setlocale(LC_ALL, "C");
 #endif
 
@@ -136,6 +141,7 @@ int main(int argc, char *argv[]) {
 
   // Log publisher metadata
   log_publisher_data();
+
 
   // Log modified_config_settings
   for (auto &[name, val] : config::modified_config_settings) {

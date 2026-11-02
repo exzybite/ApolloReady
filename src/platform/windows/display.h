@@ -19,6 +19,7 @@
 #include "src/platform/common.h"
 #include "src/utility.h"
 #include "src/video.h"
+#include "apolloready_wgc_worker.h"
 
 namespace platf::dxgi {
   extern const char *format_str[];
@@ -352,6 +353,8 @@ namespace platf::dxgi {
 
     // Experimental window-only backend. Never opens a monitor capture session.
     bool window_mode = false;
+    bool window_service_mode = false;
+    std::unique_ptr<platf::wgc_worker_capture> window_worker;
     bool window_cursor_visible = true;
     bool window_has_image = false;
     bool window_was_hidden = false;

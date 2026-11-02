@@ -35,33 +35,8 @@ namespace winrt {
     HRESULT __stdcall CreateDirect3D11DeviceFromDXGIDevice(::IDXGIDevice *dxgiDevice, ::IInspectable **graphicsDevice);
   }
 
-  /**
-   * Windows structures sometimes have compile-time GUIDs. GCC supports this, but in a roundabout way.
-   * If WINRT_IMPL_HAS_DECLSPEC_UUID is true, then the compiler supports adding this attribute to a struct. For example, Visual Studio.
-   * If not, then MinGW GCC has a workaround to assign a GUID to a structure.
-   */
-  struct
-#if WINRT_IMPL_HAS_DECLSPEC_UUID
-    __declspec(uuid("A9B3D012-3DF2-4EE3-B8D1-8695F457D3C1"))
-#endif
-    IDirect3DDxgiInterfaceAccess: ::IUnknown {
-    virtual HRESULT __stdcall GetInterface(REFIID id, void **object) = 0;
-  };
 }  // namespace winrt
-#if !WINRT_IMPL_HAS_DECLSPEC_UUID
-static constexpr GUID GUID__IDirect3DDxgiInterfaceAccess = {
-  0xA9B3D012,
-  0x3DF2,
-  0x4EE3,
-  {0xB8, 0xD1, 0x86, 0x95, 0xF4, 0x57, 0xD3, 0xC1}
-  // compare with __declspec(uuid(...)) for the struct above.
-};
-
-template<>
-constexpr auto __mingw_uuidof<winrt::IDirect3DDxgiInterfaceAccess>() -> GUID const & {
-  return GUID__IDirect3DDxgiInterfaceAccess;
-}
-#endif
+#include "apolloready_dxgi_access.h"
 
 namespace platf::dxgi {
   wgc_capture_t::wgc_capture_t() {
@@ -92,6 +67,9 @@ namespace platf::dxgi {
     HRESULT status;
     dxgi::dxgi_t dxgi;
     winrt::com_ptr<::IInspectable> d3d_comhandle;
+    window_mode = config::video.apolloready_masks;
+    window_service_mode = window_mode && platf::is_running_as_system();
+    if (!window_service_mode) {
     try {
       if (!winrt::GraphicsCaptureSession::IsSupported()) {
         BOOST_LOG(error) << "Screen capture is not supported on this device for this release of Windows!"sv;
@@ -109,9 +87,10 @@ namespace platf::dxgi {
       BOOST_LOG(error) << "Screen capture is not supported on this device for this release of Windows: failed to acquire device: [0x"sv << util::hex(e.code()).to_string_view() << ']';
       return -1;
     }
+    }
 
     DXGI_OUTPUT_DESC output_desc;
-    uwp_device = d3d_comhandle.as<winrt::IDirect3DDevice>();
+    if (d3d_comhandle) uwp_device = d3d_comhandle.as<winrt::IDirect3DDevice>();
     display->output->GetDesc(&output_desc);
 
     window_mode = config::video.apolloready_masks;
@@ -217,6 +196,7 @@ namespace platf::dxgi {
   }
 
   void wgc_capture_t::reset_window_source() {
+    window_worker.reset();
     // The Closed callback owns only this flag, never a raw pointer to the duplicator.
     window_closed = std::make_shared<std::atomic_bool>(false);
     try { if (capture_session) capture_session.Close(); } catch (winrt::hresult_error const &) {}
@@ -318,6 +298,21 @@ namespace platf::dxgi {
     }
     window_last_attempt = std::chrono::steady_clock::now();
     try {
+      if (window_service_mode) {
+        auto worker = std::make_unique<platf::wgc_worker_capture>();
+        if (!worker->start(window_display->device.get(), target, window_display->width_before_rotation,
+              window_display->height_before_rotation, window_display->capture_format, window_cursor_visible)) {
+          BOOST_LOG(error) << "ApolloReady: could not start user-session capture [0x" << std::hex
+            << static_cast<unsigned>(worker->last_error) << std::dec << ']';
+          return false;
+        }
+        window_worker = std::move(worker);
+        window_target = target;
+        window_process = process;
+        process = nullptr;
+        BOOST_LOG(info) << "ApolloReady: user-session window source selected, PID " << pid;
+        return true;
+      }
       auto factory = winrt::get_activation_factory<winrt::GraphicsCaptureItem, IGraphicsCaptureItemInterop>();
       winrt::check_hresult(factory->CreateForWindow(target, winrt::guid_of<winrt::IGraphicsCaptureItem>(), winrt::put_abi(item)));
       window_pool_size = item.Size();
@@ -365,8 +360,8 @@ namespace platf::dxgi {
       mask_window_output();
       return output();
     }
-    if (!capture_session && std::chrono::steady_clock::now() - window_last_attempt >= 1s) bind_window_source();
-    if (!capture_session) { mask_window_output(); return output(); }
+    if (!capture_session && !window_worker && std::chrono::steady_clock::now() - window_last_attempt >= 1s) bind_window_source();
+    if (!capture_session && !window_worker) { mask_window_output(); return output(); }
     auto valid_source = [&]() {
       DWORD owner = 0;
       GetWindowThreadProcessId(window_target, &owner);
@@ -398,6 +393,22 @@ namespace platf::dxgi {
       return output();
     }
     try {
+      if (window_worker) {
+        const auto copied = window_worker->copy_frame(window_display->device_ctx.get(), window_output.get());
+        if (copied < 0) {
+          BOOST_LOG(warning) << "ApolloReady: window capture worker ended [0x" << std::hex
+            << static_cast<unsigned>(window_worker->last_error) << std::dec << ", stage " << window_worker->last_stage << "]; remaining masked";
+          mask_window_output();reset_window_source();return output();
+        }
+        if (copied == 0) return output();
+        if (!valid_source()) { close_source(); return output(); }
+        if (!apolloready::sessions.publish(window_generation, apolloready::phase::ready)) {
+          mask_window_output();return output();
+        }
+        if (!window_has_image) BOOST_LOG(info) << "ApolloReady: ready - first usable user-session window frame";
+        window_has_image = true;
+        return output();
+      }
       auto frame = frame_pool.TryGetNextFrame();
       if (!frame) return output();  // A static image is safe to repeat: it is window content.
       auto close_frame = util::fail_guard([&]() { if (frame) frame.Close(); });
@@ -514,6 +525,7 @@ namespace platf::dxgi {
 
   int wgc_capture_t::set_cursor_visible(bool x) {
     window_cursor_visible = x;
+    if (window_worker) window_worker->set_cursor_visible(x);
     if (window_mode && !capture_session) return 0;
     try {
       if (capture_session.IsCursorCaptureEnabled() != x) {

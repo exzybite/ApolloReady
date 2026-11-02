@@ -16,7 +16,7 @@ receive the masks as ordinary video frames.
 
 ## Install
 
-1. Download the Windows x64 installer from this repository’s Releases when published.
+1. Download the Windows x64 installer from [Releases](https://github.com/exzybite/ApolloReady/releases/latest).
    Check its hash against the accompanying `SHA256SUMS.txt`.
 2. Close games and stop another Apollo/Sunshine server using the standard ports.
 3. Run the installer. It includes the host, Web UI, service, uninstaller and required
@@ -39,14 +39,14 @@ launcher fallback can select another newly started fullscreen application.
 Minimized or hidden games show the background mask; a still-visible background
 game may continue streaming.
 
-A headless video initialization failure has been reported and is awaiting diagnosis. An intermittent redirect to `/config#` after Save and Apply has also been reported and awaits investigation.
+Version 0.1.0 fixes window capture when the host runs as a Windows service. Headless game display, normal menu exit, the closing mask and virtual display cleanup were confirmed on the tested setup. Save / Apply now waits for the host to restart and removes empty URL fragments; signing in again may be required after a restart.
 
 Functional testing covers GTA IV and Among Us with Moonlight-Switch on one
 Windows/NVIDIA setup. Installation and an update were exercised there. Installing
 the prerequisites on a completely clean Windows PC remains untested. There is no
 universal compatibility or frame-by-frame no-flash guarantee.
 
-This preview installer is unsigned. The November 2, 2026 npm audit reported 25
+This installer is unsigned. The November 2, 2026 npm audit reported 25
 dependency advisories (1 low, 8 moderate, 16 high); their relevance remains to be
 triaged rather than being claimed as confirmed runtime vulnerabilities.
 

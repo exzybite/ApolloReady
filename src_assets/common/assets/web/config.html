@@ -29,7 +29,7 @@
       <ul class="nav nav-tabs">
         <li class="nav-item" v-for="tab in tabs" :key="tab.id">
           <a class="nav-link" :class="{'active': tab.id === currentTab}" href="#"
-            @click="currentTab = tab.id">{{tab.name}}</a>
+            @click.prevent="currentTab = tab.id">{{tab.name}}</a>
         </li>
       </ul>
 
@@ -105,6 +105,7 @@
 <script type="module">
   import { computed, createApp } from 'vue'
   import { initApp } from './init'
+  import { restartAndReconnect, normalizeConfigUrl } from './restart'
   import Navbar from './Navbar.vue'
   import General from './configs/tabs/General.vue'
   import Inputs from './configs/tabs/Inputs.vue'
@@ -471,40 +472,24 @@
           }
         });
       },
-      apply() {
+      async apply() {
+        if (this.restarted) return;
         this.saved = this.restarted = false;
-        let saved = this.save();
-
-        saved.then((result) => {
-          if (result === true) {
-            this.restarted = true;
-            setTimeout(() => {
-              this.saved = this.restarted = false;
-            }, 5000);
-            fetch("./api/restart", {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              }
-            })
-            .then((resp) => {
-              if (resp.status !== 200) {
-                location.reload();
-                return
-              }
-            })
-            .catch((e) => {
-              console.error(e);
-              setTimeout(() => {
-                location.reload();
-              }, 1000);
-              return;
-            });
-          }
-        });
+        if (await this.save() !== true) return;
+        this.restarted = true;
+        try {
+          await restartAndReconnect();
+        } catch (error) {
+          console.error(error);
+          this.restarted = false;
+        }
       },
     },
     mounted() {
+      const cleanUrl = normalizeConfigUrl(window.location.href);
+      if (cleanUrl !== window.location.href) {
+        window.history.replaceState(null, '', cleanUrl);
+      }
       // Handle hashchange events
       const handleHash = () => {
         let hash = window.location.hash;

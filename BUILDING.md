@@ -23,10 +23,10 @@ vérifiés dans `scripts/prepare-windows-prerequisites.ps1`. Cette archive n’e
 jamais exécutée : aucune installation d’Apollo existante n’est nécessaire.
 ViGEmBus est téléchargé par CMake depuis sa publication officielle avec SHA256.
 
-La version provient de `VERSION.txt`. Le script lance les tests de session et de
+La version provient de `VERSION.txt`. Le script lance les tests de reconnexion Web, de session et de
 rendu des masques, construit le serveur et l’interface, puis produit un
 installateur NSIS dans `build-gameready/cpack_artifacts`. Le `package-lock.json`
-fourni correspond aux dépendances Web de cette préversion.
+fourni correspond aux dépendances Web de cette version.
 
 La compilation n’installe pas de service sur le PC. Les jeux, les identifiants,
 les certificats privés et les configurations de streaming ne font pas partie
