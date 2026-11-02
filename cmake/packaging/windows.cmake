@@ -86,7 +86,7 @@ set(CPACK_COMPONENT_APPLICATION_DEPENDS assets)
 
 # service auto-start script
 set(CPACK_COMPONENT_AUTOSTART_DISPLAY_NAME "Launch on Startup")
-set(CPACK_COMPONENT_AUTOSTART_DESCRIPTION "If enabled, launches Apollo automatically on system startup.")
+set(CPACK_COMPONENT_AUTOSTART_DESCRIPTION "If enabled, launches ApolloReady automatically on system startup.")
 set(CPACK_COMPONENT_AUTOSTART_GROUP "Core")
 
 # assets
@@ -124,3 +124,8 @@ set(CPACK_COMPONENT_GAMEPAD_GROUP "Scripts")
 # include specific packaging
 include(${CMAKE_MODULE_PATH}/packaging/windows_nsis.cmake)
 include(${CMAKE_MODULE_PATH}/packaging/windows_wix.cmake)
+
+# Self-contained host and its prerequisites, without diagnostic tools or clients.
+set(CPACK_COMPONENTS_ALL Unspecified application assets autostart firewall gamepad sudovda)
+set(CPACK_COMPONENT_FIREWALL_REQUIRED true)
+set(CPACK_COMPONENT_GAMEPAD_REQUIRED true)

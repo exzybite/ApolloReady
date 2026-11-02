@@ -39,12 +39,14 @@
 
 # build directories
 build/
+build-gameready/
 cmake-*/
 docs/doxyconfig*
 
 # npm
 node_modules/
 package-lock.json
+!/package-lock.json
 
 # Translations
 *.mo
@@ -56,3 +58,16 @@ package-lock.json
 # Python
 *.pyc
 venv/
+
+# Local installations, authentication data and release artifacts
+/config/
+/credentials/
+/release/
+/dist/
+*.key
+*.pem
+*.pfx
+*.p12
+*.log
+*.etl
+*.pcapng

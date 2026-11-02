@@ -15,6 +15,11 @@ catch {
 # Install Virtual Gamepad
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 $installerPath = Join-Path $scriptPath "vigembus_installer.exe"
-Start-Process `
+$install = Start-Process `
     -FilePath $installerPath `
-    -ArgumentList "/passive", "/promptrestart"
+    -ArgumentList "/passive", "/norestart" `
+    -Wait -PassThru
+if ($install.ExitCode -notin @(0, 3010, 1641)) {
+    throw "Virtual gamepad prerequisite installation failed: $($install.ExitCode)"
+}
+exit $install.ExitCode

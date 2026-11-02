@@ -34,6 +34,9 @@ extern "C" {
 #include "system_tray.h"
 #include "thread_safe.h"
 #include "utility.h"
+#ifdef _WIN32
+#include "platform/windows/apolloready_session.h"
+#endif
 
 #define IDX_START_A 0
 #define IDX_START_B 1
@@ -1126,6 +1129,7 @@ namespace stream {
     // termination when we shut down.
     auto shutdown_event = mail::man->event<bool>(mail::shutdown);
     auto broadcast_shutdown_event = mail::man->event<bool>(mail::broadcast_shutdown);
+    std::optional<std::chrono::steady_clock::time_point> mask_closing_since;
     while (!shutdown_event->peek() && !broadcast_shutdown_event->peek()) {
       bool has_session_awaiting_peer = false;
 
@@ -1190,9 +1194,24 @@ namespace stream {
       }
 
       // Don't break until any pending sessions either expire or connect
-      if (proc::proc.running() == 0 && !has_session_awaiting_peer) {
+      bool source_closed = false;
+#ifdef _WIN32
+      source_closed = config::video.apolloready_masks && apolloready::sessions.read().status == apolloready::phase::closing;
+#endif
+      if ((proc::proc.running() == 0 || source_closed) && !has_session_awaiting_peer) {
+        // Keep encoding the server-side closing screen before the standard
+        // GameStream termination message, even for a detached launcher.
+        if (config::video.apolloready_masks) {
+          if (!mask_closing_since) mask_closing_since = std::chrono::steady_clock::now();
+          if (std::chrono::steady_clock::now() - *mask_closing_since < 1500ms) {
+            server->iterate(150ms);
+            continue;
+          }
+        }
         BOOST_LOG(info) << "Process terminated"sv;
         break;
+      } else {
+        mask_closing_since.reset();
       }
 
       server->iterate(150ms);

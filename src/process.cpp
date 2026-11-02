@@ -41,6 +41,7 @@
   // from_utf8() string conversion function
   #include "platform/windows/misc.h"
   #include "platform/windows/utils.h"
+  #include "platform/windows/apolloready_session.h"
 
   // _SH constants for _wfsopen()
   #include <share.h>
@@ -184,6 +185,15 @@ namespace proc {
       terminate(false, false);
     }
 
+    #ifdef _WIN32
+    std::uint64_t mask_generation = 0;
+    if (config::video.apolloready_masks) {
+      FILETIME now;
+      GetSystemTimeAsFileTime(&now);
+      apolloready::sessions.begin((std::uint64_t(now.dwHighDateTime) << 32) | now.dwLowDateTime, util::from_view(app.id));
+      mask_generation = apolloready::sessions.read().generation;
+    }
+    #endif
     _app = app;
     _app_id = util::from_view(app.id);
     _app_name = app.name;
@@ -491,6 +501,9 @@ namespace proc {
         BOOST_LOG(warning) << "Couldn't run ["sv << _app.cmd << "]: System: "sv << ec.message();
         return -1;
       }
+      #ifdef _WIN32
+      if (mask_generation) apolloready::sessions.track_launch(mask_generation, _process.id());
+      #endif
     }
 
     _app_launch_time = std::chrono::steady_clock::now();
@@ -651,6 +664,16 @@ namespace proc {
       return;
     }
 
+    #ifdef _WIN32
+    const auto mask_session = apolloready::sessions.read();
+    if (config::video.apolloready_masks && mask_session.active &&
+        mask_session.status == apolloready::phase::closing) {
+      BOOST_LOG(info) << "ApolloReady: game source closed; cleaning up app and virtual display after the last client";
+      terminate();
+      return;
+    }
+    #endif
+
     if (_app.terminate_on_pause) {
       BOOST_LOG(info) << "Terminating app [" << _app_name << "] when all clients are disconnected. Pause commands are skipped.";
       terminate();
@@ -704,6 +727,9 @@ namespace proc {
   }
 
   void proc_t::terminate(bool immediate, bool needs_refresh) {
+    #ifdef _WIN32
+    apolloready::sessions.end();
+    #endif
     std::error_code ec;
     placebo = false;
 

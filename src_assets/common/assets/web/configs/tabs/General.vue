@@ -57,6 +57,12 @@ onMounted(() => {
 
 <template>
   <div id="general" class="config-page">
+    <section v-if="platform === 'windows'" class="border rounded p-3 mb-4">
+      <h3>ApolloReady</h3>
+      <Checkbox id="apolloready_masks" locale-prefix="config"
+                v-model="config.apolloready_masks" default="false" />
+      <div class="form-text mt-2">{{ $t('config.apolloready_masks_note') }}</div>
+    </section>
     <!-- Locale -->
     <div class="mb-3">
       <label for="locale" class="form-label">{{ $t('config.locale') }}</label>
@@ -88,7 +94,7 @@ onMounted(() => {
     <!-- Apollo Name -->
     <div class="mb-3">
       <label for="sunshine_name" class="form-label">{{ $t('config.sunshine_name') }}</label>
-      <input type="text" class="form-control" id="sunshine_name" placeholder="Apollo"
+      <input type="text" class="form-control" id="sunshine_name" placeholder="ApolloReady"
              v-model="config.sunshine_name" />
       <div class="form-text">{{ $t('config.sunshine_name_desc') }}</div>
     </div>

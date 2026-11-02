@@ -1,176 +1,61 @@
-# Apollo
+# ApolloReady
 
-Apollo is a self-hosted desktop stream host for [Artemis(Moonlight Noir)](https://github.com/ClassicOldSong/moonlight-android). Offering low latency, native client resolution, cloud gaming server capabilities with support for AMD, Intel, and Nvidia GPUs for hardware encoding. Software encoding is also available. A web UI is provided to allow configuration and client pairing from your favorite web browser. Pair from the local server or any mobile device.
+[English](README.en.md) · [Installation](#installation) · [Notes de version](CHANGELOG.md) · [Détails techniques](APOLLOREADY.md)
 
-Major features:
+ApolloReady est un fork expérimental Windows d’[Apollo](https://github.com/ClassicOldSong/Apollo), fondé sur Apollo 0.4.6 et la pile de streaming [Sunshine](https://github.com/LizardByte/Sunshine).
 
-- [x] Built-in Virtual Display with HDR support that matches the resolution/framerate config of your client automatically
-- [x] Permission management for clients
-- [x] Clipboard sync
-- [x] Commands for client connection/disconnection (checkout [Auto pause/resume games](https://github.com/ClassicOldSong/Apollo/wiki/Auto-pause-resume-games))
-- [x] Input only mode
+Il ajoute des écrans de chargement, de fermeture et de jeu en arrière-plan, générés côté serveur. La capture cible la fenêtre du jeu pour garder le bureau Windows et les lanceurs hors du flux lorsque les masques sont activés. Le client Moonlight reçoit ces écrans comme des images vidéo normales.
 
-## Usage
+**Ce projet est fortement vibecodé, avec une aide importante de l’IA.** Le code est expérimental et les tests restent limités. Ce n’est pas une version officielle d’Apollo ou de Sunshine.
 
-Refer to LizardByte's documentation hosted on [Read the Docs](https://docs.lizardbyte.dev/projects/sunshine) for now.
+## Ce qu’il ajoute
 
-Currently Virtual Display support is Windows only, Linux support is planned and will be implemented in the future.
+- Interrupteur « Activer les masques de jeu » dans Configuration → Général.
+- Masques animés à environ 30 images/s, dans la langue choisie dans la configuration.
+- Capture de fenêtre, sans bascule vers une capture du bureau lorsque ce mode est actif.
+- Détection du jeu directement lancé même s’il perd le premier plan pendant le démarrage.
+- Reprise de la capture après minimisation et retour au jeu.
+- Masque de fermeture avant le retour au client et nettoyage de l’écran virtuel après fermeture du jeu.
+- Installation autonome : serveur, interface Web, service Windows et pilotes requis. Apollo n’a pas besoin d’être installé auparavant.
 
-## About Permission System
+## Installation
 
-Check out the [Wiki](https://github.com/ClassicOldSong/Apollo/wiki/Permission-System)
+1. Téléchargez l’installateur Windows x64 depuis la section **Releases** de ce dépôt lorsqu’une version est publiée. Vérifiez son SHA256 avec le fichier `SHA256SUMS.txt` de la même version.
+2. Fermez vos jeux et arrêtez un éventuel autre serveur Apollo/Sunshine utilisant les ports standards.
+3. Lancez l’installateur et suivez l’assistant. Les pilotes ViGEmBus et SudoVDA sont fournis ; les pilotes compatibles déjà présents sont conservés.
+4. Ouvrez **https://localhost:47990**, puis créez vos propres identifiants. Le serveur apparaît sous le nom **ApolloReady**.
+5. Dans Moonlight, ajoutez ce PC, effectuez l’appairage et accordez au client les permissions de lancement et de manette nécessaires.
+6. Dans **Configuration → Général**, activez les masques, puis appliquez les changements et redémarrez le serveur.
+7. Ajoutez un jeu dans **Applications**. Pour isoler l’affichage du PC, activez « Always create Virtual Display » et « Use App Identity » pour ce jeu. Le jeu doit être en plein écran sur l’écran diffusé.
 
-> [!NOTE]
-> The **FIRST** client paired with Apollo will be granted with FULL permissions, then other newly paired clients will only be granted with `View Streams` and `List Apps` permission. If you encounter `Permission Denied` error when trying to launch any app, go check the permission for that device and grant `Launch Apps` permission. The same applies to the situation when you find that you can't move mouse or type with keyboard on newly paired clients, grant the corresponding client `Mouse Input` and `Keyboard Input` permissions.
+Les masques sont désactivés par défaut. Le réglage **Langue** contrôle aussi leurs textes après application et redémarrage. La manette émulée peut être réglée sur X360 si un jeu ne répond pas au mode automatique.
 
-## About Virtual Display
+L’installateur ne fournit pas le client Moonlight : installez-le séparément sur la Switch ou l’appareil de votre choix. Aucun compte, appairage, jeu ou réglage personnel n’est fourni. Les ports GameStream standards sont utilisés, dont le port Web 47990.
 
-> [!WARNING]
-> ***It is highly recommend to remove any other virtual display solutions from your system and Apollo/Sunshine config, to reduce confusions and compatibility issues.***
+## Utilisation et limites
 
-> [!NOTE]
-> **TL;DR** Just treat your Artemis/Moonlight client like a dedicated PnP monitor with Apollo.
+Quittez les jeux par leur menu habituel. Un jeu simplement visible en arrière-plan peut continuer à être diffusé ; le masque d’arrière-plan est utilisé quand sa fenêtre est minimisée ou masquée.
 
-Apollo uses SudoVDA for virtual display. It features auto resolution and framerate matching for your Artemis/Moonlight clients. The virtual display is created upon the stream starts and removed once the app quits. **If you do not see a new virtual display added or removed when the stream starts or stops, there may be a driver misconfiguration, or another persistent virtual display might still be active.**
+La sélection de fenêtre reste une heuristique. Les jeux qui réutilisent un processus déjà ouvert, changent de fenêtre, restent en mode fenêtré ou présentent une taille différente du flux peuvent rester masqués. Une autre application nouvellement lancée en plein écran peut aussi être sélectionnée par la stratégie de secours utilisée pour les lanceurs. Les écrans tournés et certaines transitions d’affichage ne sont pas couverts.
 
-The virtual display works just like any physically attached monitors with SudoVDA, there's completely no need for a super complicated solution to "fix" resolution configurations for your devices. Unlike all other solutions that reuses one identity or generate a random one each time for any virtual display sessions, **Apollo assigns a fixed identity for each Artemis/Moonlight client, so your display configuration will be automatically remembered and managed by Windows natively.**
+Un problème d’initialisation vidéo en mode headless a été signalé ; son diagnostic reste à faire.
 
-## Configuration for dual GPU laptops
+Les tests connus portent sur GTA IV et Among Us, avec Moonlight-Switch, Joy-Con et passage dock/portable sur un PC Windows/NVIDIA. L’installation et une mise à jour ont été essayées sur ce PC. L’installation des pilotes sur un Windows totalement vierge reste à valider. Ces tests ne constituent pas une garantie de compatibilité universelle ou d’absence de flash à chaque image.
 
-Apollo supports dual GPUs seamlessly.
+L’installateur de cette préversion n’est pas signé. L’audit npm du 2 novembre 2026 signale 25 avis sur les dépendances (1 faible, 8 modérés, 16 élevés), dont la portée reste à examiner. Ils ne sont pas présentés ici comme des vulnérabilités d’exécution confirmées.
 
-If you want to use your dGPU, just set the `Adapter Name` to your dGPU and enable `Headless mode` in `Audio/Video` tab, save and restart your computer. No dummy plug is needed any more, the image will be rendered and encoded directly from your dGPU.
+## Mises à jour et désinstallation
 
-## About HDR
+Les mises à jour se font par un nouvel installateur. Sauvegardez le dossier `config` de votre installation, puis installez dans le même dossier. Conservez la configuration si l’assistant pose la question. La recherche et l’installation automatiques de mises à jour ne sont pas implémentées.
 
-HDR starts supporting from Windows 11 23H2 and generally supported on 24H2. Some systems might not have HDR toggle on 23H2 and you just need to upgrade to 24H2. Any system lower than 23H2/Windows 10 will not have HDR option available.
+Le service s’appelle `ApolloReadyService` ; la désinstallation est disponible dans les applications Windows. Les pilotes partagés avec d’autres logiciels sont conservés par le désinstalleur.
 
-> [!NOTE]
-> The below section is written for professional media workers. It doesn't stop you from enabling HDR if you know what you're doing and have deep understanding about how HDR works.
->
-> Apollo and SudoVDA can handle HDR just fine like any other streaming solutions.
->
-> If you have had good experience with HDR previously, you can safely ignore this section.
->
-> If you're curious, read on, but don't blame Apollo for poor HDR support.
+## Compilation
 
-Whether HDR streaming looks good, it depends completely on your client.
+Voir [BUILDING.md](BUILDING.md). Les sources et les dépendances Git sont verrouillées ; les prérequis de pilote sont extraits d’une publication officielle vérifiée par SHA256. Le script de préparation n’exécute ni n’installe Apollo d’origine.
 
-In short, ICC color correction should be totally useless while streaming HDR. It's your client's job to get HDR content displayed right, not the host. But in fact, it does affect the captured video stream and reflect changes on devices that can handle HDR correctly. On other devices that can't, the info is not respected at all.
+## Crédits et licence
 
-It's very complicated to explain why HDR is a total mess, and why enabling HDR makes the image appear dark/yellow. If it's your first time got HDR streaming working, and thinks HDR looks awuful, you're right, but that's not Apollo's fault, it's your device that tone mapped SDR content to the maximum of the capability of its screen, there's no headroom for anything beyond that actual peak brightness for HDR. For details, please take a look [here](https://github.com/ClassicOldSong/Apollo/issues/164).
+Tout le mérite de la pile de streaming revient aux auteurs d’**Apollo**, de **Sunshine** et de leurs dépendances. ApolloReady apporte ses changements au-dessus de cette base ; il n’en revendique pas la création.
 
-Usually Apple devices that have HDR capability can be trusted to have good results, other than that, your luck depends.
-
-<details>
-<summary>DEPRECATION ALERT</summary>
-
-Enabling HDR is **generally not recommended** with **ANY streaming solutions** at this moment, probably in the long term. The issue with **HDR itself** is huge, with loads of semi-incompatible standards, and massive variance between device configurations and capabilities. Game support for HDR is still choppy.
-
-SDR actually provides much more stable color accuracy, and are widely supported throughout most devices you can imagine. For games, art style can easily overcome the shortcoming with no HDR, and SDR has pretty standard workflows to ensure their visual performance. So HDR isn't *that* important in most of the cases.
-
-</details>
-
-## How to run multiple instances of Apollo for multiple virtual displays
-
-Follow the instructions in the [Wiki](https://github.com/ClassicOldSong/Apollo/wiki/How-to-start-multiple-instances-of-Apollo).
-
-## FAQ
-Moved to [WiKi](https://github.com/ClassicOldSong/Apollo/wiki/FAQ)
-
-## Stuttering Clinic
-Here're some common causes and solutions for stutters: [WiKi](https://github.com/ClassicOldSong/Apollo/wiki/Stuttering-Clinic).
-
-## Device specific setups
-- Pixel devices might not be able to use native resolution:
-  - Change the device resolution to High: https://github.com/ClassicOldSong/Apollo/issues/700
-
-## System Requirements
-
-> **Warning**: This table is a work in progress. Do not purchase hardware based on this.
-
-**Minimum Requirements**
-
-| **Component** | **Description** |
-|---------------|-----------------|
-| GPU           | AMD: VCE 1.0 or higher, see: [obs-amd hardware support](https://github.com/obsproject/obs-amd-encoder/wiki/Hardware-Support) |
-|               | Intel: VAAPI-compatible, see: [VAAPI hardware support](https://www.intel.com/content/www/us/en/developer/articles/technical/linuxmedia-vaapi.html) |
-|               | Nvidia: NVENC enabled cards, see: [nvenc support matrix](https://developer.nvidia.com/video-encode-and-decode-gpu-support-matrix-new) |
-| CPU           | AMD: Ryzen 3 or higher |
-|               | Intel: Core i3 or higher |
-| RAM           | 4GB or more |
-| OS            | Windows: 10+ (Windows Server requires [manual installation](https://github.com/nefarius/ViGEmBus/issues/153) for gamepad support) |
-|               | macOS: 12+ |
-|               | Linux/Debian: 11 (bullseye) |
-|               | Linux/Fedora: 39+ |
-|               | Linux/Ubuntu: 22.04+ (jammy) |
-| Network       | Host: 5GHz, 802.11ac |
-|               | Client: 5GHz, 802.11ac |
-
-**4k Suggestions**
-
-| **Component** | **Description** |
-|---------------|-----------------|
-| GPU           | AMD: Video Coding Engine 3.1 or higher |
-|               | Intel: HD Graphics 510 or higher |
-|               | Nvidia: GeForce GTX 1080 or higher |
-| CPU           | AMD: Ryzen 5 or higher |
-|               | Intel: Core i5 or higher |
-| Network       | Host: CAT5e ethernet or better |
-|               | Client: CAT5e ethernet or better |
-
-**HDR Suggestions**
-
-| **Component** | **Description** |
-|---------------|-----------------|
-| GPU           | AMD: Video Coding Engine 3.4 or higher |
-|               | Intel: UHD Graphics 730 or higher |
-|               | Nvidia: Pascal-based GPU (GTX 10-series) or higher |
-| CPU           | AMD: todo |
-|               | Intel: todo |
-| Network       | Host: CAT5e ethernet or better |
-|               | Client: CAT5e ethernet or better |
-
-## Integrations
-
-SudoVDA: Virtual Display Adapter Driver used in Apollo
-
-[Artemis](https://github.com/ClassicOldSong/moonlight-android): Integrated Virtual Display options control from client side
-
-**NOTE**: Artemis currently supports Android only. Other platforms will come later.
-
-## Support
-
-Currently support is only provided via GitHub Issues/Discussions.
-
-No real time chat support will ever be provided for Apollo and Artemis. Including but not limited to:
-
-- Discord
-- Telegram
-- Whatsapp
-- QQ
-- WeChat 
-
-> When there's a chat, there're dramas. -- Confucius
-
-## Downloads
-
-[Releases](https://github.com/ClassicOldSong/Apollo/releases)
-
-## Disclaimer
-
-I got kicked from Moonlight and Sunshine's Discord server and banned from Sunshine's GitHub repo literally for helping people out.
-
-This is what I got for finding a bug, opened an issue, getting no response, troubleshoot myself, fixed the issue myself, shared it by PR to the main repo hoping my efforts can help someone else during the maintenance gap.
-
-Yes, I'm going away. [Apollo](https://github.com/ClassicOldSong/Apollo) and [Artemis(Moonlight Noir)](https://github.com/ClassicOldSong/moonlight-android) will no longer be compatible with OG Sunshine and OG Moonlight eventually, but they'll work even better with much more carefully designed features.
-
-The Moonlight repo had stayed silent for 5 months, with nobody actually responding to issues, and people are getting totally no help besides the limited FAQ in their Discord server. I tried to answer issues and questions, solve problems within my ability but I got kicked out just for helping others.
-
-**PRs for feature improvements are welcomed here unlike the main repo, your ideas are more likely to be appreciated and your efforts are actually being respected. We welcome people who can and willing to share their efforts, helping yourselves and other people in need.**
-
-**Update**: They have contacted me and apologized for this incident, but the fact it **happened** still motivated me to start my own fork.
-
-## License
-
-GPLv3
+Le code conserve sa licence [GPL-3.0](LICENSE). Les composants tiers gardent leurs licences respectives : voir [THIRD_PARTY.md](THIRD_PARTY.md) et la [présentation amont conservée](UPSTREAM_README.md). Les problèmes propres à ce fork sont à signaler sur son dépôt, avec les étapes de reproduction et des journaux expurgés.

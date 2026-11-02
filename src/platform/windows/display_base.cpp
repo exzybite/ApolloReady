@@ -233,7 +233,13 @@ namespace platf::dxgi {
       // display or GPU changes. We should reinit to examine the updated state of
       // the display subsystem. It is recommended to call this once per frame.
       if (!factory->IsCurrent()) {
-        return platf::capture_e::reinit;
+        // Window masks have a fixed stream-sized texture and their own WGC
+        // source. An exclusive-fullscreen mode change (especially on exit)
+        // must not tear down the encoder while the closing screen is sent.
+        // A removed/reset D3D device still requires normal reinitialization.
+        if (!config::video.apolloready_masks || FAILED(device->GetDeviceRemovedReason())) {
+          return platf::capture_e::reinit;
+        }
       }
 
       platf::capture_e status = capture_e::ok;
@@ -368,6 +374,11 @@ namespace platf::dxgi {
       BOOST_LOG(error) << "Failed to create D3D11 device for DD test [0x"sv << util::hex(status).to_string_view() << ']';
       return false;
     }
+
+    // WGC window capture does not require Desktop Duplication access. In
+    // exclusive fullscreen, DuplicateOutput can deny access and incorrectly
+    // remove the game's monitor from enumeration after a mode change.
+    if (config::video.apolloready_masks) return true;
 
     output1_t output1;
     status = output->QueryInterface(IID_IDXGIOutput1, (void **) &output1);
@@ -984,7 +995,7 @@ namespace platf {
    * @param hwdevice_type enables possible use of hardware encoder
    */
   std::shared_ptr<display_t> display(mem_type_e hwdevice_type, const std::string &display_name, const video::config_t &config) {
-    if (config::video.capture == "ddx" || config::video.capture.empty()) {
+    if (!config::video.apolloready_masks && (config::video.capture == "ddx" || config::video.capture.empty())) {
       if (hwdevice_type == mem_type_e::dxgi) {
         auto disp = std::make_shared<dxgi::display_ddup_vram_t>();
 
@@ -1000,7 +1011,7 @@ namespace platf {
       }
     }
 
-    if (config::video.capture == "wgc" || config::video.capture.empty()) {
+    if (config::video.apolloready_masks || config::video.capture == "wgc" || config::video.capture.empty()) {
       if (hwdevice_type == mem_type_e::dxgi) {
         auto disp = std::make_shared<dxgi::display_wgc_vram_t>();
 

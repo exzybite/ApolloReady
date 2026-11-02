@@ -20,6 +20,7 @@
             <h2>{{ $t('resource_card.legal') }}</h2>
             <br>
             <p>{{ $t('resource_card.legal_desc') }}</p>
+            <p>ApolloReady — fork of Apollo / Sunshine. Upstream licenses and credits apply.</p>
             <div class="card-group p-4 align-items-center">
                 <a class="btn btn-danger m-1" href="https://github.com/ClassicOldSong/Apollo/blob/master/LICENSE"
                     target="_blank">

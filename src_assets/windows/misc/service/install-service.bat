@@ -4,17 +4,15 @@ setlocal enabledelayedexpansion
 rem Get sunshine root directory
 for %%I in ("%~dp0\..") do set "ROOT_DIR=%%~fI"
 
-set SERVICE_NAME=ApolloService
+set SERVICE_NAME=ApolloReadyService
 set "SERVICE_BIN=%ROOT_DIR%\tools\sunshinesvc.exe"
-set "SERVICE_CONFIG_DIR=%LOCALAPPDATA%\SudoMaker\Apollo"
+set "SERVICE_CONFIG_DIR=%LOCALAPPDATA%\ApolloReady"
 set "SERVICE_CONFIG_FILE=%SERVICE_CONFIG_DIR%\service_start_type.txt"
 
 rem Set service to demand start. It will be changed to auto later if the user selected that option.
 set SERVICE_START_TYPE=demand
 
-rem Remove the legacy SunshineSvc service
-net stop sunshinesvc
-sc delete sunshinesvc
+rem ApolloReady does not stop or remove upstream Apollo/Sunshine services.
 
 rem Check if ApolloService already exists
 sc qc %SERVICE_NAME% > nul 2>&1
@@ -58,10 +56,11 @@ if exist "%SERVICE_CONFIG_FILE%" (
 echo Setting service start type set to: [!SERVICE_START_TYPE!]
 
 rem Run the sc command to create/reconfigure the service
-sc %SC_CMD% %SERVICE_NAME% binPath= "%SERVICE_BIN%" start= %SERVICE_START_TYPE% DisplayName= "Apollo Service"
+sc %SC_CMD% %SERVICE_NAME% binPath= "\"%SERVICE_BIN%\"" start= %SERVICE_START_TYPE% DisplayName= "ApolloReady Service"
+if errorlevel 1 exit /b 1
 
 rem Set the description of the service
-sc description %SERVICE_NAME% "Apollo is a self-hosted game stream host for Moonlight."
+sc description %SERVICE_NAME% "ApolloReady game streaming host for Moonlight."
 
 rem Start the new service
 net start %SERVICE_NAME%

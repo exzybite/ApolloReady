@@ -1,0 +1,108 @@
+{
+  "upstreamRepository": "https://github.com/ClassicOldSong/Apollo",
+  "upstreamCommit": "0cd32abaaa141d262477d039ac447b38fe99c394",
+  "submodules": [
+    {
+      "path": "packaging/linux/flatpak/deps/flatpak-builder-tools",
+      "commit": "7090720d43404c60b88445a3149835ec3c585717",
+      "url": "https://github.com/flatpak/flatpak-builder-tools.git",
+      "windowsBuild": false
+    },
+    {
+      "path": "packaging/linux/flatpak/deps/shared-modules",
+      "commit": "b63062b3cdf451e537ed6ca1f68f9c2701ad8a98",
+      "url": "https://github.com/flathub/shared-modules.git",
+      "windowsBuild": false
+    },
+    {
+      "path": "third-party/Simple-Web-Server",
+      "commit": "5b29c7004cc53252a8eff06d62899c8847ada971",
+      "url": "https://github.com/ClassicOldSong/Simple-Web-Server",
+      "windowsBuild": true
+    },
+    {
+      "path": "third-party/TPCircularBuffer",
+      "commit": "cc520397504bb72bc6df79ff03eb72988a6dc50d",
+      "url": "https://github.com/michaeltyson/TPCircularBuffer.git",
+      "windowsBuild": false
+    },
+    {
+      "path": "third-party/ViGEmClient",
+      "commit": "8d71f6740ffff4671cdadbca255ce528e3cd3fef",
+      "url": "https://github.com/LizardByte/Virtual-Gamepad-Emulation-Client.git",
+      "windowsBuild": true
+    },
+    {
+      "path": "third-party/build-deps",
+      "commit": "cf5dffaf4c62a5e5e2949c37b642cfc5ad962b98",
+      "url": "https://github.com/LizardByte/build-deps.git",
+      "windowsBuild": true
+    },
+    {
+      "path": "third-party/doxyconfig",
+      "commit": "a73f908fb70fac4f6076a28f0a751239ea5ac2d3",
+      "url": "https://github.com/LizardByte/doxyconfig.git",
+      "windowsBuild": false
+    },
+    {
+      "path": "third-party/googletest",
+      "commit": "52eb8108c5bdec04579160ae17225d66034bd723",
+      "url": "https://github.com/google/googletest.git",
+      "windowsBuild": false
+    },
+    {
+      "path": "third-party/inputtino",
+      "commit": "83cf70ef33196a2a022671ccf8a686fc8f67ae8e",
+      "url": "https://github.com/games-on-whales/inputtino.git",
+      "windowsBuild": false
+    },
+    {
+      "path": "third-party/libdisplaydevice",
+      "commit": "a0674741ec9a5eea335cddc0e7002b9f50782909",
+      "url": "https://github.com/LizardByte/libdisplaydevice.git",
+      "windowsBuild": true
+    },
+    {
+      "path": "third-party/moonlight-common-c",
+      "commit": "ad329b240f18826f320ce6a99226b36354b86b59",
+      "url": "https://github.com/ClassicOldSong/moonlight-common-c",
+      "windowsBuild": true
+    },
+    {
+      "path": "third-party/nanors",
+      "commit": "19f07b513e924e471cadd141943c1ec4adc8d0e0",
+      "url": "https://github.com/sleepybishop/nanors.git",
+      "windowsBuild": true
+    },
+    {
+      "path": "third-party/nv-codec-headers",
+      "commit": "22441b505d9d9afc1e3002290820909846c24bdc",
+      "url": "https://github.com/FFmpeg/nv-codec-headers.git",
+      "windowsBuild": true
+    },
+    {
+      "path": "third-party/nvapi-open-source-sdk",
+      "commit": "cce4e90b629f712ae6eebafac97739bd1196cdef",
+      "url": "https://github.com/LizardByte/nvapi-open-source-sdk.git",
+      "windowsBuild": true
+    },
+    {
+      "path": "third-party/tray",
+      "commit": "db96aeab04c4a62477ea5186f1c0d43183df0a98",
+      "url": "https://github.com/LizardByte/tray.git",
+      "windowsBuild": true
+    },
+    {
+      "path": "third-party/wayland-protocols",
+      "commit": "0091197f5c1b1f2c131f1410e99f9c95d50646be",
+      "url": "https://gitlab.freedesktop.org/wayland/wayland-protocols.git",
+      "windowsBuild": false
+    },
+    {
+      "path": "third-party/wlr-protocols",
+      "commit": "a5028afbe4a1cf0daf020c4104c1565a09d6e58a",
+      "url": "https://gitlab.freedesktop.org/wlroots/wlr-protocols.git",
+      "windowsBuild": false
+    }
+  ]
+}

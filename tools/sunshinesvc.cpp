@@ -17,7 +17,7 @@ SERVICE_STATUS service_status;
 HANDLE stop_event;
 HANDLE session_change_event;
 
-#define SERVICE_NAME "ApolloService"
+#define SERVICE_NAME "ApolloReadyService"
 
 DWORD WINAPI HandlerEx(DWORD dwControl, DWORD dwEventType, LPVOID lpEventData, LPVOID lpContext) {
   switch (dwControl) {
@@ -120,7 +120,7 @@ HANDLE OpenLogFileHandle() {
 
   // Create sunshine.log in the Temp folder (usually %SYSTEMROOT%\Temp)
   GetTempPathW(_countof(log_file_name), log_file_name);
-  wcscat_s(log_file_name, L"sunshine.log");
+  wcscat_s(log_file_name, L"ApolloReady-service.log");
 
   // The file handle must be inheritable for our child process to use it
   SECURITY_ATTRIBUTES security_attributes = {sizeof(security_attributes), NULL, TRUE};
@@ -263,7 +263,7 @@ VOID WINAPI ServiceMain(DWORD dwArgc, LPTSTR *lpszArgv) {
     UpdateProcThreadAttribute(startup_info.lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_JOB_LIST, &job_handle, sizeof(job_handle), NULL, NULL);
 
     PROCESS_INFORMATION process_info;
-    if (!CreateProcessAsUserW(console_token, L"Sunshine.exe", NULL, NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT | CREATE_NO_WINDOW | EXTENDED_STARTUPINFO_PRESENT, NULL, NULL, (LPSTARTUPINFOW) &startup_info, &process_info)) {
+    if (!CreateProcessAsUserW(console_token, L"ApolloReady.exe", NULL, NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT | CREATE_NO_WINDOW | EXTENDED_STARTUPINFO_PRESENT, NULL, NULL, (LPSTARTUPINFOW) &startup_info, &process_info)) {
       CloseHandle(console_token);
       CloseHandle(job_handle);
       continue;

@@ -493,6 +493,7 @@ namespace config {
     },  // vaapi
 
     {},  // capture
+    false,  // apolloready_masks (opt in)
     {},  // encoder
     {},  // adapter_name
     {},  // output_name
@@ -1176,6 +1177,10 @@ namespace config {
     bool_f(vars, "vaapi_strict_rc_buffer", video.vaapi.strict_rc_buffer);
 
     string_f(vars, "capture", video.capture);
+    // Migrate the first experimental capture setting; an explicit toggle wins.
+    video.apolloready_masks = video.capture == "wgc-game";
+    bool_f(vars, "apolloready_masks", video.apolloready_masks);
+    if (video.capture == "wgc-game") video.capture.clear();
     string_f(vars, "encoder", video.encoder);
     string_f(vars, "adapter_name", video.adapter_name);
     string_f(vars, "output_name", video.output_name);

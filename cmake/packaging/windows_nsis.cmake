@@ -12,14 +12,35 @@ SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS
         IfSilent +2 0
         # ExecShell 'open' 'https://docs.lizardbyte.dev/projects/sunshine'
         nsExec::ExecToLog 'icacls \\\"$INSTDIR\\\" /reset'
-        nsExec::ExecToLog '\\\"$INSTDIR\\\\scripts\\\\update-path.bat\\\" add'
-        nsExec::ExecToLog '\\\"$INSTDIR\\\\drivers\\\\sudovda\\\\install.bat\\\"'
         nsExec::ExecToLog '\\\"$INSTDIR\\\\scripts\\\\migrate-config.bat\\\"'
+        nsExec::ExecToLog 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File \\\"$INSTDIR\\\\scripts\\\\initialize-config.ps1\\\"'
+        nsExec::ExecToLog 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File \\\"$INSTDIR\\\\drivers\\\\sudovda\\\\ensure-installed.ps1\\\"'
+        Pop $0
+        StrCmp $0 0 DisplayDriverReady
+        MessageBox MB_OK|MB_ICONSTOP 'The virtual display prerequisite could not be installed. Please check the installation log.'
+        Abort
+        DisplayDriverReady:
+        nsExec::ExecToLog 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File \\\"$INSTDIR\\\\scripts\\\\install-gamepad.ps1\\\"'
+        Pop $0
+        StrCmp $0 0 GamepadDriverReady
+        StrCmp $0 3010 GamepadDriverReboot
+        StrCmp $0 1641 GamepadDriverReboot
+        MessageBox MB_OK|MB_ICONSTOP 'The virtual gamepad prerequisite could not be installed. Please check the installation log.'
+        Abort
+        GamepadDriverReboot:
+        SetRebootFlag true
+        GamepadDriverReady:
         nsExec::ExecToLog '\\\"$INSTDIR\\\\scripts\\\\add-firewall-rule.bat\\\"'
-        nsExec::ExecToLog \
-          'powershell.exe -ExecutionPolicy Bypass -File \\\"$INSTDIR\\\\scripts\\\\install-gamepad.ps1\\\"'
         nsExec::ExecToLog '\\\"$INSTDIR\\\\scripts\\\\install-service.bat\\\"'
-        nsExec::ExecToLog '\\\"$INSTDIR\\\\scripts\\\\autostart-service.bat\\\"'
+        Pop $0
+        StrCmp $0 0 ServiceReady
+        MessageBox MB_OK|MB_ICONSTOP 'The ApolloReady service could not be started. Please check that the standard ports are available.'
+        Abort
+        ServiceReady:
+        SectionGetFlags \\\${autostart} $0
+        IntOp $0 $0 & 1
+        StrCmp $0 1 0 +2
+          nsExec::ExecToLog '\\\"$INSTDIR\\\\scripts\\\\autostart-service.bat\\\"'
         NoController:
         ")
 
@@ -29,24 +50,11 @@ set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS
         "${CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS}
         nsExec::ExecToLog '\\\"$INSTDIR\\\\scripts\\\\delete-firewall-rule.bat\\\"'
         nsExec::ExecToLog '\\\"$INSTDIR\\\\scripts\\\\uninstall-service.bat\\\"'
-        nsExec::ExecToLog '\\\"$INSTDIR\\\\sunshine.exe\\\" --restore-nvprefs-undo'
-        MessageBox MB_YESNO|MB_ICONQUESTION \
-            'Do you want to remove Virtual Gamepad?' \
-            /SD IDNO IDNO NoGamepad
-            nsExec::ExecToLog \
-              'powershell.exe -ExecutionPolicy Bypass -File \\\"$INSTDIR\\\\scripts\\\\uninstall-gamepad.ps1\\\"'; \
-              skipped if no
-        NoGamepad:
-        MessageBox MB_YESNO|MB_ICONQUESTION \
-            'Do you want to remove SudoVDA Virtual Display Driver?' \
-            /SD IDNO IDNO NoSudoVDA
-            nsExec::ExecToLog '\\\"$INSTDIR\\\\drivers\\\\sudovda\\\\uninstall.bat\\\"'; skipped if no
-        NoSudoVDA:
+        nsExec::ExecToLog '\\\"$INSTDIR\\\\ApolloReady.exe\\\" --restore-nvprefs-undo'
         MessageBox MB_YESNO|MB_ICONQUESTION \
             'Do you want to remove $INSTDIR (this includes the configuration, cover images, and settings)?' \
             /SD IDNO IDNO NoDelete
             RMDir /r \\\"$INSTDIR\\\"; skipped if no
-        nsExec::ExecToLog '\\\"$INSTDIR\\\\scripts\\\\update-path.bat\\\" remove'
         NoDelete:
         ")
 
@@ -54,12 +62,12 @@ set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS
 set(CPACK_NSIS_MODIFY_PATH OFF)
 set(CPACK_NSIS_EXECUTABLES_DIRECTORY ".")
 # This will be shown on the installed apps Windows settings
-set(CPACK_NSIS_INSTALLED_ICON_NAME "sunshine.exe")
+set(CPACK_NSIS_INSTALLED_ICON_NAME "ApolloReady.exe")
 set(CPACK_NSIS_CREATE_ICONS_EXTRA
         "${CPACK_NSIS_CREATE_ICONS_EXTRA}
         SetOutPath '\$INSTDIR'
         CreateShortCut '\$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\${CMAKE_PROJECT_NAME}.lnk' \
-            '\$INSTDIR\\\\sunshine.exe' '--shortcut'
+            '\$INSTDIR\\\\ApolloReady.exe' '--shortcut'
         ")
 set(CPACK_NSIS_DELETE_ICONS_EXTRA
         "${CPACK_NSIS_DELETE_ICONS_EXTRA}

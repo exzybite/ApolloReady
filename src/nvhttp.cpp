@@ -40,6 +40,7 @@
 
 #ifdef _WIN32
   #include "platform/windows/virtual_display.h"
+  #include "platform/windows/apolloready_session.h"
 #endif
 
 using namespace std::literals;
@@ -1065,6 +1066,48 @@ namespace nvhttp {
     return named_cert_nodes;
   }
 
+  #ifdef _WIN32
+  void apolloready_status(resp_https_t response, req_https_t request) {
+    pt::ptree tree;
+    tree.put("root.<xmlattr>.status_code", 200);
+    tree.put("root.ready", 0);
+    tree.put("root.status", "waiting");
+    auto named_cert = get_verified_cert(request);
+    if (!named_cert || !(named_cert->perm & PERM::_allow_view)) {
+      tree.put("root.<xmlattr>.status_code", 403);
+      tree.put("root.status", "forbidden");
+    } else if (!config::video.apolloready_masks) {
+      tree.put("root.enabled", 0);
+      tree.put("root.status", "disabled");
+    } else {
+      auto session = apolloready::sessions.read();
+      auto arguments = request->parse_query_string();
+      auto requested = arguments.find("appid");
+      if (requested == arguments.end() || requested->second != std::to_string(session.app_id) || session.app_id <= 0) {
+        tree.put("root.<xmlattr>.status_code", 409);
+        tree.put("root.status", "unknown_session");
+      } else {
+        const char *status = "waiting";
+        switch (session.status) {
+          case apolloready::phase::ready: status = "ready"; break;
+          case apolloready::phase::closing: status = "closing"; break;
+          case apolloready::phase::idle: status = "idle"; break;
+          default: break;
+        }
+        tree.put("root.enabled", 1);
+        tree.put("root.appid", session.app_id);
+        tree.put("root.generation", session.generation);
+        tree.put("root.status", status);
+        tree.put("root.ready", session.active && session.status == apolloready::phase::ready ? 1 : 0);
+      }
+    }
+    std::ostringstream data;
+    pt::write_xml(data, tree);
+    response->write(data.str());
+    response->close_connection_after_response = true;
+  }
+  #endif
+
   void applist(resp_https_t response, req_https_t request) {
     print_req<SunshineHTTPS>(request);
 
@@ -1701,6 +1744,10 @@ namespace nvhttp {
     https_server.resource["^/serverinfo$"]["GET"] = serverinfo<SunshineHTTPS>;
     https_server.resource["^/pair$"]["GET"] = pair<SunshineHTTPS>;
     https_server.resource["^/applist$"]["GET"] = applist;
+    #ifdef _WIN32
+    // Paired-client TLS verification above applies; deliberately no HTTP route.
+    https_server.resource["^/apolloreadystatus$"]["GET"] = apolloready_status;
+    #endif
     https_server.resource["^/appasset$"]["GET"] = appasset;
     https_server.resource["^/launch$"]["GET"] = [&host_audio](auto resp, auto req) {
       launch(host_audio, resp, req);

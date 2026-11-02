@@ -17,6 +17,9 @@
 #include "display.h"
 #include "misc.h"
 #include "src/logging.h"
+#include "src/config.h"
+#include "apolloready_session.h"
+#include "apolloready_mask.h"
 
 namespace platf {
   using namespace std::literals;
@@ -66,6 +69,10 @@ namespace platf::dxgi {
   }
 
   wgc_capture_t::~wgc_capture_t() {
+    if (window_mode) {
+      reset_window_source();
+      return;
+    }
     if (capture_session) {
       capture_session.Close();
     }
@@ -106,6 +113,29 @@ namespace platf::dxgi {
     DXGI_OUTPUT_DESC output_desc;
     uwp_device = d3d_comhandle.as<winrt::IDirect3DDevice>();
     display->output->GetDesc(&output_desc);
+
+    window_mode = config::video.apolloready_masks;
+    if (window_mode) {
+      window_display = display;
+      window_monitor = output_desc.Monitor;
+      display->capture_format = config.dynamicRange ? DXGI_FORMAT_R16G16B16A16_FLOAT : DXGI_FORMAT_B8G8R8A8_UNORM;
+      if (display->display_rotation != DXGI_MODE_ROTATION_IDENTITY && display->display_rotation != DXGI_MODE_ROTATION_UNSPECIFIED) {
+        BOOST_LOG(error) << "ApolloReady: rotated outputs are not supported by the experimental window backend";
+        return -1;
+      }
+      D3D11_TEXTURE2D_DESC texture {};
+      texture.Width = display->width_before_rotation;
+      texture.Height = display->height_before_rotation;
+      texture.MipLevels = texture.ArraySize = texture.SampleDesc.Count = 1;
+      texture.Format = display->capture_format;
+      texture.Usage = D3D11_USAGE_DEFAULT;
+      texture.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+      if (FAILED(display->device->CreateTexture2D(&texture, nullptr, &window_output)) ||
+          FAILED(display->device->CreateRenderTargetView(window_output.get(), nullptr, &window_output_rt))) return -1;
+      mask_window_output();
+      BOOST_LOG(info) << "ApolloReady: experimental window-only capture enabled; monitor fallback disabled";
+      return 0;
+    }
 
     auto monitor_factory = winrt::get_activation_factory<winrt::GraphicsCaptureItem, IGraphicsCaptureItemInterop>();
     if (monitor_factory == nullptr ||
@@ -157,6 +187,259 @@ namespace platf::dxgi {
     return 0;
   }
 
+  void wgc_capture_t::mask_window_output() {
+    auto session = apolloready::sessions.read();
+    bool closing = session.status == apolloready::phase::closing;
+    bool paused = window_was_hidden;
+    auto now = std::chrono::steady_clock::now();
+    if (!window_has_image && window_mask_closing == closing && window_mask_paused == paused &&
+        now - window_mask_updated < 33ms) return;
+    if (window_output_rt) {
+      const float color[] = {0.008f, 0.012f, 0.02f, 1.0f};
+      window_display->device_ctx->ClearRenderTargetView(window_output_rt.get(), color);
+    }
+    auto pixels = apolloready::render_mask(window_display->width_before_rotation,
+      window_display->height_before_rotation, closing, paused, config::sunshine.locale,
+      static_cast<unsigned>(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count() % 3000) / 33);
+    if (!pixels.empty()) {
+      if (window_display->capture_format == DXGI_FORMAT_B8G8R8A8_UNORM) {
+        window_display->device_ctx->UpdateSubresource(window_output.get(), 0, nullptr, pixels.data(), window_display->width_before_rotation * 4, 0);
+      } else if (window_display->capture_format == DXGI_FORMAT_R16G16B16A16_FLOAT) {
+        auto hdr = apolloready::mask_to_scrgb(pixels);
+        window_display->device_ctx->UpdateSubresource(window_output.get(), 0, nullptr, hdr.data(), window_display->width_before_rotation * 8, 0);
+      }
+    }
+    window_has_image = false;
+    window_mask_closing = closing;
+    window_mask_paused = paused;
+    window_mask_updated = now;
+    apolloready::sessions.publish(window_generation, apolloready::phase::waiting);
+  }
+
+  void wgc_capture_t::reset_window_source() {
+    // The Closed callback owns only this flag, never a raw pointer to the duplicator.
+    window_closed = std::make_shared<std::atomic_bool>(false);
+    try { if (capture_session) capture_session.Close(); } catch (winrt::hresult_error const &) {}
+    try { if (frame_pool) frame_pool.Close(); } catch (winrt::hresult_error const &) {}
+    capture_session = nullptr;
+    frame_pool = nullptr;
+    item = nullptr;
+    if (window_process) CloseHandle(window_process);
+    window_process = nullptr;
+    window_target = nullptr;
+    window_has_image = false;
+  }
+
+  namespace {
+    std::uint64_t creation_time(HANDLE process) {
+      FILETIME created, exited, kernel, user;
+      if (!GetProcessTimes(process, &created, &exited, &kernel, &user)) return 0;
+      return (std::uint64_t(created.dwHighDateTime) << 32) | created.dwLowDateTime;
+    }
+  }
+
+  bool wgc_capture_t::bind_window_source() {
+    auto session = apolloready::sessions.read();
+    if (!session.active || session.generation != window_generation || session.status == apolloready::phase::closing) return false;
+    HWND target = reinterpret_cast<HWND>(session.window);
+    DWORD pid = session.process_id;
+    if (!target) {
+      auto eligible = [&](HWND candidate) {
+        RECT rect;
+        MONITORINFO monitor {sizeof(MONITORINFO)};
+        DWORD cloaked = 0, owner = 0;
+        GetWindowThreadProcessId(candidate, &owner);
+        return candidate && owner && owner != GetCurrentProcessId() && IsWindowVisible(candidate) && !IsIconic(candidate) &&
+          !(GetWindowLongPtr(candidate, GWL_EXSTYLE) & WS_EX_TOOLWINDOW) &&
+          MonitorFromWindow(candidate, MONITOR_DEFAULTTONULL) == window_monitor &&
+          SUCCEEDED(DwmGetWindowAttribute(candidate, DWMWA_CLOAKED, &cloaked, sizeof(cloaked))) && !cloaked &&
+          GetWindowRect(candidate, &rect) && GetMonitorInfo(window_monitor, &monitor) &&
+          rect.left <= monitor.rcMonitor.left && rect.top <= monitor.rcMonitor.top &&
+          rect.right >= monitor.rcMonitor.right && rect.bottom >= monitor.rcMonitor.bottom;
+      };
+      // A fast game can lose foreground during stream/display initialization.
+      // Prefer a qualifying window owned by the exact process we just launched.
+      // Launchers without a game window retain the existing foreground heuristic.
+      target = GetForegroundWindow();
+      DWORD foreground_pid = 0;
+      GetWindowThreadProcessId(target, &foreground_pid);
+      if (session.launched_process_id && (foreground_pid != session.launched_process_id || !eligible(target))) {
+        struct search_t {
+          DWORD pid;
+          decltype(eligible) *accept;
+          HWND found = nullptr;
+        } search {session.launched_process_id, &eligible};
+        EnumWindows([](HWND candidate, LPARAM context) -> BOOL {
+          auto &search = *reinterpret_cast<search_t *>(context);
+          DWORD owner = 0;
+          GetWindowThreadProcessId(candidate, &owner);
+          if (owner == search.pid && (*search.accept)(candidate)) {
+            search.found = candidate;
+            return FALSE;
+          }
+          return TRUE;
+        }, reinterpret_cast<LPARAM>(&search));
+        if (search.found) target = search.found;
+      }
+      auto now = std::chrono::steady_clock::now();
+      if (target != window_candidate) {
+        window_candidate = target;
+        window_candidate_since = now;
+      }
+      if (!eligible(target)) {
+        window_candidate_since = now;
+        return false;
+      }
+      if (now - window_candidate_since < 300ms) return false;
+      GetWindowThreadProcessId(target, &pid);
+    }
+    if (session.window) {
+      DWORD owner = 0;
+      GetWindowThreadProcessId(target, &owner);
+      if (!IsWindow(target) || owner != pid) {
+        apolloready::sessions.publish(window_generation, apolloready::phase::closing);
+        return false;
+      }
+    }
+    HANDLE process = OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+    if (!process) return false;
+    auto created = creation_time(process);
+    auto close_process = util::fail_guard([&]() { if (process) CloseHandle(process); });
+    if (!created || created < session.started || WaitForSingleObject(process, 0) != WAIT_TIMEOUT) return false;
+    if (session.window) {
+      DWORD owner = 0;
+      GetWindowThreadProcessId(target, &owner);
+      if (!IsWindow(target) || owner != pid || created != session.process_started) {
+        apolloready::sessions.publish(window_generation, apolloready::phase::closing);
+        return false;
+      }
+    } else if (!apolloready::sessions.bind(window_generation, reinterpret_cast<std::uintptr_t>(target), pid, created)) {
+      return false;
+    }
+    window_last_attempt = std::chrono::steady_clock::now();
+    try {
+      auto factory = winrt::get_activation_factory<winrt::GraphicsCaptureItem, IGraphicsCaptureItemInterop>();
+      winrt::check_hresult(factory->CreateForWindow(target, winrt::guid_of<winrt::IGraphicsCaptureItem>(), winrt::put_abi(item)));
+      window_pool_size = item.Size();
+      if (window_pool_size.Width <= 0 || window_pool_size.Height <= 0) return false;
+      auto flag = window_closed;
+      item.Closed([flag](auto const &, auto const &) { flag->store(true); });
+      frame_pool = winrt::Direct3D11CaptureFramePool::CreateFreeThreaded(uwp_device,
+        static_cast<winrt::Windows::Graphics::DirectX::DirectXPixelFormat>(window_display->capture_format), 2, window_pool_size);
+      capture_session = frame_pool.CreateCaptureSession(item);
+      capture_session.IsCursorCaptureEnabled(window_cursor_visible);
+      capture_session.StartCapture();
+      window_target = target;
+      window_process = process;
+      process = nullptr;
+      BOOST_LOG(info) << "ApolloReady: window source selected, PID " << pid
+        << (pid == session.launched_process_id ? " (launched process)" : " (foreground heuristic)")
+        << "; waiting for its first frame";
+      return true;
+    } catch (winrt::hresult_error const &error) {
+      BOOST_LOG(warning) << "ApolloReady: window capture unavailable [" << util::hex(error.code()).to_string_view() << "]; remaining masked";
+      reset_window_source();
+      return false;
+    }
+  }
+
+  capture_e wgc_capture_t::next_window_frame(ID3D11Texture2D **out, uint64_t &out_time) {
+    // The only possible output is our own mask texture or a copy of the bound HWND.
+    // In particular this path never calls CreateForMonitor or Desktop Duplication.
+    auto output = [&]() {
+      *out = window_output.get();
+      (*out)->AddRef();
+      out_time = qpc_counter();
+      return capture_e::ok;
+    };
+    auto session = apolloready::sessions.read();
+    if (session.generation != window_generation) {
+      reset_window_source();
+      window_candidate = nullptr;
+      window_last_attempt = {};
+      window_generation = session.generation;
+      window_was_hidden = false;
+      mask_window_output();
+    }
+    if (!session.active || session.status == apolloready::phase::closing) {
+      mask_window_output();
+      return output();
+    }
+    if (!capture_session && std::chrono::steady_clock::now() - window_last_attempt >= 1s) bind_window_source();
+    if (!capture_session) { mask_window_output(); return output(); }
+    auto valid_source = [&]() {
+      DWORD owner = 0;
+      GetWindowThreadProcessId(window_target, &owner);
+      auto current = apolloready::sessions.read();
+      return current.active && current.generation == window_generation && current.status != apolloready::phase::closing &&
+        !window_closed->load() && IsWindow(window_target) && owner == current.process_id &&
+        window_process && WaitForSingleObject(window_process, 0) == WAIT_TIMEOUT;
+    };
+    auto close_source = [&]() {
+      if (apolloready::sessions.publish(window_generation, apolloready::phase::closing))
+        BOOST_LOG(info) << "ApolloReady: closing - source invalid, switching to mask";
+      mask_window_output();
+      reset_window_source();
+    };
+    if (!valid_source()) { close_source(); return output(); }
+    if (IsIconic(window_target) || !IsWindowVisible(window_target)) {
+      window_was_hidden = true;
+      mask_window_output();
+      return output();  // Losing focus/minimizing never ends a session.
+    }
+    if (window_was_hidden) {
+      // Exclusive fullscreen can leave a capture pool stalled after restore.
+      // Reopen only the already bound HWND, retaining PID and launch checks.
+      window_was_hidden = false;
+      mask_window_output();
+      reset_window_source();
+      window_last_attempt = {};
+      BOOST_LOG(info) << "ApolloReady: restored window - reopening its capture";
+      return output();
+    }
+    try {
+      auto frame = frame_pool.TryGetNextFrame();
+      if (!frame) return output();  // A static image is safe to repeat: it is window content.
+      auto close_frame = util::fail_guard([&]() { if (frame) frame.Close(); });
+      auto size = frame.ContentSize();
+      if (size.Width != window_pool_size.Width || size.Height != window_pool_size.Height) {
+        mask_window_output();
+        if (size.Width > 0 && size.Height > 0) {
+          frame.Close();
+          frame = nullptr;
+          frame_pool.Recreate(uwp_device,
+            static_cast<winrt::Windows::Graphics::DirectX::DirectXPixelFormat>(window_display->capture_format), 2, size);
+          window_pool_size = size;
+        }
+        return output();
+      }
+      texture2d_t source;
+      auto access = frame.Surface().as<winrt::IDirect3DDxgiInterfaceAccess>();
+      winrt::check_hresult(access->GetInterface(IID_ID3D11Texture2D, reinterpret_cast<void **>(&source)));
+      D3D11_TEXTURE2D_DESC desc;
+      source->GetDesc(&desc);
+      if (desc.Width != window_display->width_before_rotation || desc.Height != window_display->height_before_rotation ||
+          size.Width != static_cast<int>(desc.Width) || size.Height != static_cast<int>(desc.Height) ||
+          desc.Format != window_display->capture_format) {
+        mask_window_output();
+        return output();  // First version accepts exact output-sized sources only.
+      }
+      window_display->device_ctx->CopyResource(window_output.get(), source.get());
+      if (!valid_source()) { close_source(); return output(); }
+      if (!apolloready::sessions.publish(window_generation, apolloready::phase::ready)) {
+        mask_window_output();
+        return output();
+      }
+      if (!window_has_image) BOOST_LOG(info) << "ApolloReady: ready - first usable window frame";
+      window_has_image = true;
+    } catch (winrt::hresult_error const &error) {
+      BOOST_LOG(warning) << "ApolloReady: window frame unavailable [" << util::hex(error.code()).to_string_view() << "]; masking";
+      mask_window_output();
+      reset_window_source();  // Retry the same bound HWND; never discover a replacement.
+    }
+    return output();
+  }
+
   /**
    * This function runs in a separate thread spawned by the frame pool and is a producer of frames.
    * To maintain parity with the original display interface, this frame will be consumed by the capture thread.
@@ -190,6 +473,7 @@ namespace platf::dxgi {
    * @param out_time the timestamp of the frame just captured
    */
   capture_e wgc_capture_t::next_frame(std::chrono::milliseconds timeout, ID3D11Texture2D **out, uint64_t &out_time) {
+    if (window_mode) return next_window_frame(out, out_time);
     // this CONSUMER runs in the capture thread
     release_frame();
 
@@ -229,6 +513,8 @@ namespace platf::dxgi {
   }
 
   int wgc_capture_t::set_cursor_visible(bool x) {
+    window_cursor_visible = x;
+    if (window_mode && !capture_session) return 0;
     try {
       if (capture_session.IsCursorCaptureEnabled() != x) {
         capture_session.IsCursorCaptureEnabled(x);

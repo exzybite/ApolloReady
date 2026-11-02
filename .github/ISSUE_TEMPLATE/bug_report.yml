@@ -1,0 +1,26 @@
+name: Bug report / Rapport de bug
+description: Report an ApolloReady issue with reproduction steps.
+body:
+  - type: input
+    id: version
+    attributes:
+      label: ApolloReady version
+    validations:
+      required: true
+  - type: textarea
+    id: setup
+    attributes:
+      label: Windows, GPU, Moonlight client and game
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps and expected/actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized logs
+      description: Remove credentials, private keys and personal information before posting.

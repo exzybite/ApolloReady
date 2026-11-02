@@ -146,6 +146,7 @@
             name: "General",
             options: {
               "locale": "en",
+              "apolloready_masks": "disabled",
               "sunshine_name": "",
               "min_log_level": 2,
               "global_prep_cmd": [],
@@ -351,6 +352,10 @@
           }
 
           // remove values we don't want in the config file
+          if (this.config.capture === 'wgc-game') {
+            this.config.apolloready_masks ??= 'enabled';
+            this.config.capture = '';
+          }
           delete this.config.platform;
           delete this.config.status;
           delete this.config.version;

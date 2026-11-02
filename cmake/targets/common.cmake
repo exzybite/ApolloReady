@@ -2,6 +2,7 @@
 # this file will also load platform specific macros
 
 add_executable(sunshine ${SUNSHINE_TARGET_FILES})
+set_target_properties(sunshine PROPERTIES OUTPUT_NAME "ApolloReady")
 foreach(dep ${SUNSHINE_TARGET_DEPENDENCIES})
     add_dependencies(sunshine ${dep})  # compile these before sunshine
 endforeach()

@@ -13,6 +13,7 @@
 #include <dxgi1_6.h>
 #include <Unknwn.h>
 #include <winrt/Windows.Graphics.Capture.h>
+#include <atomic>
 
 // local includes
 #include "src/platform/common.h"
@@ -348,6 +349,31 @@ namespace platf::dxgi {
     winrt::Windows::Graphics::Capture::Direct3D11CaptureFrame produced_frame {nullptr}, consumed_frame {nullptr};
     SRWLOCK frame_lock = SRWLOCK_INIT;
     CONDITION_VARIABLE frame_present_cv;
+
+    // Experimental window-only backend. Never opens a monitor capture session.
+    bool window_mode = false;
+    bool window_cursor_visible = true;
+    bool window_has_image = false;
+    bool window_was_hidden = false;
+    bool window_mask_closing = false, window_mask_paused = false;
+    unsigned window_mask_step = 0;
+    std::chrono::steady_clock::time_point window_mask_updated {};
+    display_base_t *window_display = nullptr;
+    HMONITOR window_monitor = nullptr;
+    HWND window_candidate = nullptr;
+    HWND window_target = nullptr;
+    HANDLE window_process = nullptr;
+    std::uint64_t window_generation = 0;
+    std::chrono::steady_clock::time_point window_candidate_since {}, window_last_attempt {};
+    winrt::Windows::Graphics::SizeInt32 window_pool_size {};
+    texture2d_t window_output;
+    render_target_t window_output_rt;
+    std::shared_ptr<std::atomic_bool> window_closed = std::make_shared<std::atomic_bool>(false);
+
+    void reset_window_source();
+    bool bind_window_source();
+    capture_e next_window_frame(ID3D11Texture2D **out, uint64_t &out_time);
+    void mask_window_output();
 
     void on_frame_arrived(winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool const &sender, winrt::Windows::Foundation::IInspectable const &);
 

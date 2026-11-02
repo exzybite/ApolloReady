@@ -84,6 +84,7 @@ namespace config {
     } vaapi;
 
     std::string capture;
+    bool apolloready_masks;
     std::string encoder;
     std::string adapter_name;
     std::string output_name;

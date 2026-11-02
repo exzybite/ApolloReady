@@ -93,7 +93,7 @@ const config = ref(props.config)
     <!-- Capture -->
     <div class="mb-3" v-if="platform !== 'macos'">
       <label for="capture" class="form-label">{{ $t('config.capture') }}</label>
-      <select id="capture" class="form-select" v-model="config.capture">
+      <select id="capture" class="form-select" v-model="config.capture" :disabled="platform === 'windows' && config.apolloready_masks === 'enabled'">
         <option value="">{{ $t('_common.autodetect') }}</option>
         <PlatformLayout :platform="platform">
           <template #linux>
@@ -109,6 +109,9 @@ const config = ref(props.config)
         </PlatformLayout>
       </select>
       <div class="form-text">{{ $t('config.capture_desc') }}</div>
+      <div v-if="platform === 'windows' && config.apolloready_masks === 'enabled'" class="alert alert-info mt-2">
+        {{ $t('config.apolloready_masks_capture') }}
+      </div>
     </div>
 
     <!-- Encoder -->
