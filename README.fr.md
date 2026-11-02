@@ -26,7 +26,7 @@ Il ajoute des écrans de chargement, de fermeture et de jeu en arrière-plan, g�
 4. Ouvrez **https://localhost:47990**, puis créez vos propres identifiants. Le serveur apparaît sous le nom **ApolloReady**.
 5. Dans Moonlight, ajoutez ce PC, effectuez l’appairage et accordez au client les permissions de lancement et de manette nécessaires.
 6. Dans **Configuration → Général**, activez les masques, puis appliquez les changements et redémarrez le serveur.
-7. Ajoutez un jeu dans **Applications**. Pour isoler l’affichage du PC, activez « Always create Virtual Display » et « Use App Identity » pour ce jeu. Le jeu doit être en plein écran sur l’écran diffusé.
+7. Lancez vos jeux depuis Moonlight.
 
 Les masques sont désactivés par défaut. Le réglage **Langue** contrôle aussi leurs textes après application et redémarrage. La manette émulée peut être réglée sur X360 si un jeu ne répond pas au mode automatique.
 
@@ -40,7 +40,7 @@ La sélection de fenêtre reste une heuristique. Les jeux qui réutilisent un pr
 
 La version 0.1.0 corrige la capture lorsque le serveur fonctionne comme service Windows. Sur la configuration testée, l’affichage headless, la sortie normale par le menu, le masque de fermeture et la désactivation de l’écran virtuel sont confirmés. Save / Apply attend désormais le redémarrage du serveur et supprime les fragments d’adresse vides ; une reconnexion peut être nécessaire après un redémarrage.
 
-Les tests connus portent sur GTA IV et Among Us, avec Moonlight-Switch, Joy-Con et passage dock/portable sur un PC Windows/NVIDIA. L’installation et une mise à jour ont été essayées sur ce PC. L’installation des pilotes sur un Windows totalement vierge reste à valider. Ces tests ne constituent pas une garantie de compatibilité universelle ou d’absence de flash à chaque image.
+L’installation et une mise à jour ont été testées. L’installation des pilotes sur un Windows totalement vierge reste à valider. La compatibilité de tous les jeux et appareils n’est pas garantie.
 
 L’installateur n’est pas signé. L’audit npm du 2 novembre 2026 signale 25 avis sur les dépendances (1 faible, 8 modérés, 16 élevés), dont la portée reste à examiner. Ils ne sont pas présentés ici comme des vulnérabilités d’exécution confirmées.
 

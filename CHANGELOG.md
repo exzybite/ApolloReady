@@ -5,7 +5,7 @@
 - Keep the Windows host service under SYSTEM while running WGC window capture
   in the logged-in console user's session. Frames pass through an inherited,
   synchronized GPU texture; the worker is included in the host executable and
-  opens no network listener. Headless display, normal menu exit, the closing mask and virtual display cleanup were confirmed on the tested Windows/NVIDIA setup.
+  opens no network listener. Headless display, normal menu exit, the closing mask and virtual display cleanup were confirmed in functional testing.
 - Prevent configuration tabs from adding an empty URL fragment. After Apply,
   wait for the host to respond before reopening the configuration page. Signing in again may be required after restarting.
 

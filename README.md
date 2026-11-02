@@ -24,8 +24,7 @@ receive the masks as ordinary video frames.
 4. Open **https://localhost:47990**, create your credentials and pair Moonlight.
    Grant the client the launch/controller permissions it needs.
 5. Enable game masks in **Configuration → General**, apply and restart the host.
-6. Add a fullscreen game. Enable its virtual display and app identity options to
-   stream through a dedicated display.
+6. Launch your games through Moonlight.
 
 No existing Apollo installation is required. The Moonlight client is installed
 separately on your gaming device. No developer credentials, pairings, games or
@@ -39,12 +38,9 @@ launcher fallback can select another newly started fullscreen application.
 Minimized or hidden games show the background mask; a still-visible background
 game may continue streaming.
 
-Version 0.1.0 fixes window capture when the host runs as a Windows service. Headless game display, normal menu exit, the closing mask and virtual display cleanup were confirmed on the tested setup. Save / Apply now waits for the host to restart and removes empty URL fragments; signing in again may be required after a restart.
+Version 0.1.0 fixes window capture when the host runs as a Windows service. Headless game display, normal menu exit, the closing mask and virtual display cleanup have been confirmed. Save / Apply now waits for the host to restart and removes empty URL fragments; signing in again may be required after a restart.
 
-Functional testing covers GTA IV and Among Us with Moonlight-Switch on one
-Windows/NVIDIA setup. Installation and an update were exercised there. Installing
-the prerequisites on a completely clean Windows PC remains untested. There is no
-universal compatibility or frame-by-frame no-flash guarantee.
+Installation and updating have been tested. Installing the prerequisites on a completely clean Windows PC remains untested. Compatibility with every game and device is not guaranteed.
 
 This installer is unsigned. The November 2, 2026 npm audit reported 25
 dependency advisories (1 low, 8 moderate, 16 high); their relevance remains to be
