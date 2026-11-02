@@ -39,13 +39,6 @@ launcher fallback can select another newly started fullscreen application.
 Minimized or hidden games show the background mask; a still-visible background
 game may continue streaming.
 
-A headless video initialization failure has been reported and is awaiting diagnosis. An intermittent redirect to `/config#` after Save and Apply has also been reported and awaits investigation.
-
-Functional testing covers GTA IV and Among Us with Moonlight-Switch on one
-Windows/NVIDIA setup. Installation and an update were exercised there. Installing
-the prerequisites on a completely clean Windows PC remains untested. There is no
-universal compatibility or frame-by-frame no-flash guarantee.
-
 This preview installer is unsigned. The November 2, 2026 npm audit reported 25
 dependency advisories (1 low, 8 moderate, 16 high); their relevance remains to be
 triaged rather than being claimed as confirmed runtime vulnerabilities.
