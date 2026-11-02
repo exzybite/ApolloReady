@@ -1,6 +1,6 @@
 # ApolloReady
 
-[Français](README.md)
+[Français](README.fr.md)
 
 Experimental Windows fork of [Apollo](https://github.com/ClassicOldSong/Apollo)
 0.4.6, built on the [Sunshine](https://github.com/LizardByte/Sunshine) streaming stack.
@@ -39,7 +39,7 @@ launcher fallback can select another newly started fullscreen application.
 Minimized or hidden games show the background mask; a still-visible background
 game may continue streaming.
 
-A headless video initialization failure has been reported and is awaiting diagnosis.
+A headless video initialization failure has been reported and is awaiting diagnosis. An intermittent redirect to `/config#` after Save and Apply has also been reported and awaits investigation.
 
 Functional testing covers GTA IV and Among Us with Moonlight-Switch on one
 Windows/NVIDIA setup. Installation and an update were exercised there. Installing
