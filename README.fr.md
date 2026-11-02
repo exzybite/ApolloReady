@@ -38,10 +38,6 @@ Quittez les jeux par leur menu habituel. Un jeu simplement visible en arrière-p
 
 La sélection de fenêtre reste une heuristique. Les jeux qui réutilisent un processus déjà ouvert, changent de fenêtre, restent en mode fenêtré ou présentent une taille différente du flux peuvent rester masqués. Une autre application nouvellement lancée en plein écran peut aussi être sélectionnée par la stratégie de secours utilisée pour les lanceurs. Les écrans tournés et certaines transitions d’affichage ne sont pas couverts.
 
-La version 0.1.0 corrige la capture lorsque le serveur fonctionne comme service Windows. Sur la configuration testée, l’affichage headless, la sortie normale par le menu, le masque de fermeture et la désactivation de l’écran virtuel sont confirmés. Save / Apply attend désormais le redémarrage du serveur et supprime les fragments d’adresse vides ; une reconnexion peut être nécessaire après un redémarrage.
-
-L’installation et une mise à jour ont été testées. L’installation des pilotes sur un Windows totalement vierge reste à valider. La compatibilité de tous les jeux et appareils n’est pas garantie.
-
 L’installateur n’est pas signé. L’audit npm du 2 novembre 2026 signale 25 avis sur les dépendances (1 faible, 8 modérés, 16 élevés), dont la portée reste à examiner. Ils ne sont pas présentés ici comme des vulnérabilités d’exécution confirmées.
 
 ## Mises à jour et désinstallation

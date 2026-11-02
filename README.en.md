@@ -38,10 +38,6 @@ launcher fallback can select another newly started fullscreen application.
 Minimized or hidden games show the background mask; a still-visible background
 game may continue streaming.
 
-Version 0.1.0 fixes window capture when the host runs as a Windows service. Headless game display, normal menu exit, the closing mask and virtual display cleanup have been confirmed. Save / Apply now waits for the host to restart and removes empty URL fragments; signing in again may be required after a restart.
-
-Installation and updating have been tested. Installing the prerequisites on a completely clean Windows PC remains untested. Compatibility with every game and device is not guaranteed.
-
 This installer is unsigned. The November 2, 2026 npm audit reported 25
 dependency advisories (1 low, 8 moderate, 16 high); their relevance remains to be
 triaged rather than being claimed as confirmed runtime vulnerabilities.
